@@ -1,0 +1,28 @@
+name: build-test
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v6
+      with:
+        show-progress: false
+      
+    - name: Build
+      run: cargo build --release --verbose
+      
+    - name: Upload to Github
+      uses: actions/upload-artifact@v6
+      with:
+        name: release
+        path: target/release/byd-metadata-dumper.exe
