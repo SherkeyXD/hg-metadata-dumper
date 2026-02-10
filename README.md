@@ -1,4 +1,4 @@
-# BYD Metadata Dumper
+# HG Metadata Dumper
 
 Dumps `global-metadata.dat` for hg games, written in rust.
 
