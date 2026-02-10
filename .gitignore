@@ -24,3 +24,6 @@ target
 # Game
 GameAssembly.dll
 global-metadata.dat
+
+# No dependency so ignore lockfile
+Cargo.lock
