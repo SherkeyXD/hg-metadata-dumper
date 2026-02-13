@@ -5,7 +5,7 @@ Dumps `global-metadata.dat` for hg games, written in rust.
 ## Usage
 
 ```bash
-Usage: byd-metadata-dumper [OPTIONS] [INPUT] [OUTPUT]
+Usage: hg-metadata-dumper [OPTIONS] [INPUT] [OUTPUT]
 
 Arguments:
   [INPUT]     Input PE file path (default: GameAssembly.dll)
