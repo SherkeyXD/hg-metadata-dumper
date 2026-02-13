@@ -14,27 +14,30 @@ struct Args {
     input: String,
     output: String,
     verbose: bool,
+    decrypt_strings: bool,
 }
 
 impl Args {
     fn parse() -> Self {
         let args: Vec<String> = env::args().collect();
         if args.iter().any(|arg| arg == "--help" || arg == "-h") {
-            println!("Usage: byd-metadata-dumper [OPTIONS] [INPUT] [OUTPUT]");
+            println!("Usage: {} [OPTIONS] [INPUT] [OUTPUT]", args[0]);
             println!("\nArguments:");
             println!("  [INPUT]     Input PE file path (default: GameAssembly.dll)");
             println!("  [OUTPUT]    Output decrypted file path (default: global-metadata.dat)");
             println!("\nOptions:");
-            println!("  -v, --verbose  Show detailed metadata info");
-            println!("  -h, --help  Show this help message");
+            println!("  -d, --decrypt-strings  Decrypt string literals");
+            println!("  -v, --verbose          Show detailed metadata info");
+            println!("  -h, --help             Show this help message");
             std::process::exit(0);
         }
 
         let verbose = args.iter().any(|arg| arg == "--verbose" || arg == "-v");
+        let decrypt_strings = args.iter().any(|arg| arg == "--decrypt-strings" || arg == "-d");
         let positional: Vec<&String> = args
             .iter()
             .skip(1)
-            .filter(|arg| !arg.starts_with("--") && *arg != "-v" && *arg != "-h")
+            .filter(|arg| !arg.starts_with("--") && *arg != "-v" && *arg != "-h" && *arg != "-d")
             .collect();
 
         let input = positional
@@ -46,7 +49,7 @@ impl Args {
             .map(|s| s.to_string())
             .unwrap_or_else(|| "global-metadata.dat".to_string());
 
-        Args { input, output, verbose }
+        Args { input, output, verbose, decrypt_strings }
     }
 }
 
@@ -72,7 +75,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     let start_time = std::time::Instant::now();
-    let decrypted = match hgxxtea::decrypt(data, &key) {
+    let mut decrypted = match hgxxtea::decrypt(data, &key) {
         Ok(d) => d,
         Err(e) => {
             eprintln!("✗ Decryption failed: {}", e);
@@ -87,6 +90,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Ok(metadata) => {
             if metadata.is_valid() {
                 println!("✓ Valid global-metadata.dat");
+                if args.decrypt_strings {
+                    if let Err(e) = metadata::decrypt_string_literals(&metadata, &mut decrypted) {
+                        eprintln!("  Failed to decrypt string literals: {}", e);
+                    }
+                }
+
                 println!("  Magic:   {}", fmt_bytes_hex(&metadata.magic_bytes()));
                 println!("  Version: {}", metadata.header.version);
                 if args.verbose {

@@ -216,9 +216,9 @@ impl GlobalMetadataHeader {
     }
 }
 
-struct StringLiteralInfo {
-    length: u32,
-    offset: u32,
+pub struct StringLiteralInfo {
+    pub length: u32,
+    pub offset: u32,
 }
 
 impl StringLiteralInfo {
@@ -432,6 +432,7 @@ pub struct GlobalMetadata {
     pub type_definitions: Vec<TypeDefinition>,
     pub metadata_usage_lists: Vec<MetadataUsageList>,
     pub metadata_usage_pairs: Vec<MetadataUsagePair>,
+    pub string_literal_infos: Vec<StringLiteralInfo>,
     string_data: Vec<u8>,
 }
 
@@ -513,6 +514,7 @@ impl GlobalMetadata {
             type_definitions,
             metadata_usage_lists,
             metadata_usage_pairs,
+            string_literal_infos: literal_infos,
             string_data,
         })
     }
@@ -537,4 +539,22 @@ impl GlobalMetadata {
             .unwrap_or(self.string_data.len());
         std::str::from_utf8(&self.string_data[start..end]).ok()
     }
+}
+
+pub fn decrypt_string_literals(metadata: &GlobalMetadata, data: &mut [u8]) -> Result<(), String> {
+    let lit_data_start = metadata.header.string_literal_data_offset as usize;
+    
+    for info in &metadata.string_literal_infos {
+        let start = lit_data_start + info.offset as usize;
+        let end = start + info.length as usize;
+        
+        if let Some(slice) = data.get_mut(start..end) {
+            let xor_key = (info.length as u8) ^ 0x2E;
+            for byte in slice {
+                *byte ^= xor_key;
+            }
+        }
+    }
+
+    Ok(())
 }
